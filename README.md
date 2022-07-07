@@ -22,7 +22,7 @@ erofs2ext4Converter.bat filePath
 	
 
 ## Additionally - Reference:
-	These exe tools are from Internet
+These exe tools are from Internet
 
 - 7-zip
 https://www.7-zip.org/
