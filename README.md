@@ -7,18 +7,17 @@ erofs2ext4Converter.bat filePath
 ```
 
 ## Supported Devices(Theoretically):
-### Xiaomi MIX4
-### Xiaomi Civi
-### Xiaomi Civi 1S
-### Redmi K50
-### Redmi K50G
-### Redmi K50 Pro
-### Xiaomi 12
-### Xiaomi 12 Pro (QCOM,MTK)
-### Xiaomi 12S Pro
-### Xiaomi 12S Ultra
-### .....
-### Any new erofs devices
+- Xiaomi MIX4
+- Xiaomi Civi
+- Xiaomi Civi 1S
+- Redmi K50
+- Redmi K50G
+- Redmi K50 Pro
+- Xiaomi 12
+- Xiaomi 12 Pro (QCOM,MTK)
+- Xiaomi 12S Pro
+- Xiaomi 12S Ultra
+- Any new erofs devices
 	
 
 ## Additionally - Reference:
