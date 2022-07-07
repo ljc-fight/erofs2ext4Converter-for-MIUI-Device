@@ -1,5 +1,5 @@
 # erofs2ext4Converter-for-MIUI-Device
-通过分析小米出厂erofs文件系统机器分区表文件发现支持erofs和ext4两种类型，此工具意在帮助喜欢折腾的搞机盆友转化erofs为ext4文件系统方便直接读写根目录
+By analyzing the Xiaomi erofs filesystem device's fstab files found that two types of erofs and ext4 are supported, this tool is intended to help developers convert the erofs file system into an ext4 file system with one click
 
 ## Usage: 
 ```
@@ -21,7 +21,7 @@ erofs2ext4Converter.bat filePath
 	
 
 ## Additionally - Reference:
-These exe tools are from Internet
+These tools are from Internet
 
 - 7-zip
 https://www.7-zip.org/
