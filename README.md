@@ -17,7 +17,7 @@ erofs2ext4Converter.bat filePath
 - Xiaomi 12 Pro (QCOM,MTK)
 - Xiaomi 12S Pro
 - Xiaomi 12S Ultra
-- Any new erofs devices
+- Any new MIUI erofs devices
 	
 
 ## Additionally - Reference:
