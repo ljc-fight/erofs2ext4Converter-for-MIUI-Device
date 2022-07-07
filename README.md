@@ -18,6 +18,10 @@ erofs2ext4Converter.bat filePath
 - Xiaomi 12S Pro
 - Xiaomi 12S Ultra
 - Any new MIUI erofs devices
+
+## Attention
+- You should delete some apps or files to keep the system partition smaller than 4G
+- Only EROFS filesystem MIUI devices can use this
 	
 
 ## Additionally - Reference:
