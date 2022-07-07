@@ -1,6 +1,39 @@
+::[Bat To Exe Converter]
+::
+::YAwzoRdxOk+EWAnk
+::fBw5plQjdG8=
+::YAwzuBVtJxjWCl3EqQJgSA==
+::ZR4luwNxJguZRRnk
+::Yhs/ulQjdF+5
+::cxAkpRVqdFKZSDk=
+::cBs/ulQjdF+5
+::ZR41oxFsdFKZSDk=
+::eBoioBt6dFKZSDk=
+::cRo6pxp7LAbNWATEpCI=
+::egkzugNsPRvcWATEpCI=
+::dAsiuh18IRvcCxnZtBJQ
+::cRYluBh/LU+EWAnk
+::YxY4rhs+aU+JeA==
+::cxY6rQJ7JhzQF1fEqQJQ
+::ZQ05rAF9IBncCkqN+0xwdVs0
+::ZQ05rAF9IAHYFVzEqQJQ
+::eg0/rx1wNQPfEVWB+kM9LVsJDGQ=
+::fBEirQZwNQPfEVWB+kM9LVsJDGQ=
+::cRolqwZ3JBvQF1fEqQJQ
+::dhA7uBVwLU+EWDk=
+::YQ03rBFzNR3SWATElA==
+::dhAmsQZ3MwfNWATElA==
+::ZQ0/vhVqMQ3MEVWAtB9wSA==
+::Zg8zqx1/OA3MEVWAtB9wSA==
+::dhA7pRFwIByZRRnk
+::Zh4grVQjdCuDJH2B50kkJwtoSRaNOnjoA60IvMv04fyCsFkYRt46aoDdyeaLOPRHyUrqY5M/wn9I1s4UCXs=
+::YB416Ek+ZG8=
+::
+::
+::978f952a14a936cc963da21a135fa983
 @echo off
 setlocal 
-title erofs2ext4Converter batch
+title erofs2ext4Converter batch [https://github.com/ljc-fight/erofs2ext4Converter-for-MIUI-Device]
 
 
 if not exist bin\Windows (
@@ -14,16 +47,17 @@ if "%errorlevel%" neq "0" (
 	set exitcode=1
 	goto End
 )
-if "%1" == "--help"  set Error="Get help"                             &goto Usage
-if "%1" == "-h"      set Error="Get help"                             &goto Usage
-if "%1" == ""        set Error="Not defined the first argument"       &goto Usage
-if not exist "%1" bin\Windows\cecho {04}File is not exist !{0F}{\n}   &goto End
+if "%1" == "--help"  set Error="Get help"                                   &goto Usage
+if "%1" == "-h"      set Error="Get help"                                   &goto Usage
+if "%1" == "" set Error="Not defined the first argument" & set exitcode=1   &goto Usage
+if not exist "%1" bin\Windows\cecho {04}File is not exist !{0F}{\n}         &goto End
 set zipFile=%1
 
 
 
 
 :CheckIFMIUIROM
+echo.Target: %zipFile%
 for /f "delims=" %%i in ('echo.%zipFile% ^|bin\Windows\busybox grep "miui_"') do (set checkMIUI=%%i)
 if "%checkMIUI%" == "" set UnsopportedReason="This may not be a MIUI ROM" &goto Unsopported
 for /f "delims=" %%i in ('bin\Windows\busybox basename %checkMIUI%') do (set baseName=%%i)
@@ -71,7 +105,6 @@ del vendor_dlkm.img 1>nul 2>nul
 
 
 :Convert
-echo.Target: %zipFile%
 echo.Unpack zip file...
 bin\Windows\7z x -y %zipFile% -otmp 1>nul 2>nul|| (
 	set UnsopportedReason="Cannot open the file as archive !" 
@@ -97,6 +130,8 @@ if "isSupportExt4FS" == "" (
 	rd /s /q vendor
 	rd /s /q config
 	goto Unsopported
+) else (
+	bin\Windows\cecho {0A}Ext4 filesystem is supported on your device !{0F}{\n}
 )
 del /s /q tmp\images\vendor.img
 if exist tmp\images\odm.img (
@@ -127,8 +162,8 @@ if exist tmp\images\system_ext.img (
 bin\Windows\busybox sed -i "s/\[/\\\[/g" config/*file_contexts
 bin\Windows\busybox sed -i "s/+/\\+/g" config/*file_contexts
 
-rd /s /q system\system\media\theme\miui_mod_icons\com.google.android.apps.nbu
-rd /s /q system\system\media\theme\miui_mod_icons\dynamic\com.google.android.apps.nbu
+rd /s /q system\system\media\theme\miui_mod_icons\com.google.android.apps.nbu 1>nul 2>nul
+rd /s /q system\system\media\theme\miui_mod_icons\dynamic\com.google.android.apps.nbu 1>nul 2>nul
 
 :: if the size of image is bigger than 4G ,it may unbootable after repacking image
 rd /s /q system\system\data-app
@@ -159,10 +194,10 @@ if exist vendor_dlkm (
 
 setlocal enabledelayedexpansion
 
-:: Use fsutil to ctreate empty file
+:: Use fsutil to ctreate empty file to fill space
 if exist system (
 	echo.Repack system image
-	fsutil file createnew system\system.txt 288435456 1>nul 2>nul
+	fsutil file createnew system\system.txt 138435456 1>nul 2>nul
 	for /f "delims=" %%i in ('bin\Windows\busybox du -sb system ^|bin\Windows\busybox tr -cd 0-9') do (set systemSize=%%i)
 	del system\system.txt
 	echo.Size of partition system: !systemSize!
@@ -176,7 +211,7 @@ if exist system (
 )
 if exist vendor (
 	echo.Repack vendor image
-	fsutil file createnew vendor\vendor.txt 178435456 1>nul 2>nul
+	fsutil file createnew vendor\vendor.txt 78435456 1>nul 2>nul
 	for /f "delims=" %%i in ('bin\Windows\busybox du -sb vendor ^|bin\Windows\busybox tr -cd 0-9') do (set vendorSize=%%i)
 	del vendor\vendor.txt
 	echo.Size of partition vendor: !vendorSize!
@@ -190,7 +225,7 @@ if exist vendor (
 )
 if exist product (
 	echo.Repack product image
-	fsutil file createnew product\product.txt 67108864 1>nul 2>nul
+	fsutil file createnew product\product.txt 57108864 1>nul 2>nul
 	for /f "delims=" %%i in ('bin\Windows\busybox du -sb product ^|bin\Windows\busybox tr -cd 0-9') do (set productSize=%%i)
 	del product\product.txt
 	echo.Size of partition product: !productSize!
@@ -204,7 +239,7 @@ if exist product (
 )
 if exist system_ext (
 	echo.Repack system_ext image
-	fsutil file createnew system_ext\system_ext.txt 67108864 1>nul 2>nul
+	fsutil file createnew system_ext\system_ext.txt 57108864 1>nul 2>nul
 	for /f "delims=" %%i in ('bin\Windows\busybox du -sb system_ext ^|bin\Windows\busybox tr -cd 0-9') do (set systemExtSize=%%i)
 	del system_ext\system_ext.txt
 	echo.Size of partition system_ext: !systemExtSize!
@@ -264,7 +299,33 @@ if exist super.img (
 	bin\Windows\cecho {04}Failed to pack super.img !{0F}{\n}
 	goto FailedToRepack
 )
+
 setlocal disabledelayedexpansion
+
+if exist ext4_%deviceCode%_%romVersion%_%androidVersion% rd /s /q ext4_%deviceCode%_%romVersion%_%androidVersion%
+
+md ext4_%deviceCode%_%romVersion%_%androidVersion%
+
+move tmp\images ext4_%deviceCode%_%romVersion%_%androidVersion%\
+move super.img ext4_%deviceCode%_%romVersion%_%androidVersion%\images\super.img
+bin\Windows\busybox cp -rf bin/platform-tools ext4_%deviceCode%_%romVersion%_%androidVersion%/
+bin\Windows\busybox cp -rf bin/flash*.bat ext4_%deviceCode%_%romVersion%_%androidVersion%/
+del *.img
+rd /s /q odm 1>nul 2>nul
+rd /s /q config 1>nul 2>nul
+rd /s /q system 1>nul 2>nul
+rd /s /q vendor 1>nul 2>nul
+rd /s /q product 1>nul 2>nul
+rd /s /q system_ext 1>nul 2>nul
+rd /s /q vendor_dlkm 1>nul 2>nul
+rd /s/ q tmp 1>nul 2>nul
+
+bin\Windows\cecho {0A}Everything is OK !{0F}{\n}
+bin\Windows\cecho {0A}Production was output to the directory ext4_%deviceCode%_%romVersion%_%androidVersion% !{0F}{\n}
+
+goto End
+
+
 
 
 :Usage
@@ -289,10 +350,10 @@ goto end
 
 :FailedToRepack
 setlocal disabledelayedexpansion
-bin\Windows\cecho {04}Failed to repack logical partition !{0F}{\n}
+bin\Windows\cecho {04}Failed !{0F}{\n}
 
 
 
 
 :End
-if "%exitcode%" == "1" pause
+if "%exitcode%"=="1" pause
