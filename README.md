@@ -1,3 +1,8 @@
+## 用法 & USAGE
+```shell
+	erofs2ext4Converter.bat <romfile>
+```
+
 ## erofs2ext4Converter README.MD
 - 注意事项
   - 将erofs2ext4Converter.bat和ROM文件放在相同路径
