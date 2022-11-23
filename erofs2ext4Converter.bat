@@ -50,10 +50,11 @@ md tmp\config
 md tmp\output
 for /f "tokens=2 delims==" %%i in ('type bin\configure.txt ^|findstr subpartition') do (set superList=%%i)
 for /f "tokens=2 delims==" %%i in ('type bin\configure.txt ^|findstr exclusion_list') do (set exclusionList=%%i)
-
+echo.Super subpartition list:!superList!
+echo.Exclusion list:!exclusionList!
 for %%i in (!exclusionList!) do (
 	set pname=%%i
-	if exist tmp\output\!pname!.img (
+	if exist tmp\images\!pname!.img (
 		echo.Super subpartition !exclusion! in exclusion list,skipping
 		move tmp\images\!pname!.img tmp\output\ 1>nul 2>nul
 	)
