@@ -4,7 +4,8 @@ if not exist bin (
 	pause
 	exit
 )
-PATH=%PATH%;%CD%\bin
+set PATH=
+set PATH=%SystemRoot%\System32;%CD%\bin
 setlocal enableDelayedExpansion
 set who=%0
 if [%1] == [] (
@@ -31,6 +32,7 @@ if not exist !romFile! (
 	call :USAGE
 	goto EOF
 )
+for /f "tokens=*" %%i in ('busybox date ^+%%s') do (set startTime=%%i)
 echo.Target:!romFile!
 rd /s /q tmp 1>nul 2>nul
 rd /s /q config 1>nul 2>nul
@@ -50,12 +52,12 @@ md tmp\config
 md tmp\output
 for /f "tokens=2 delims==" %%i in ('type bin\configure.txt ^|findstr subpartition') do (set superList=%%i)
 for /f "tokens=2 delims==" %%i in ('type bin\configure.txt ^|findstr exclusion_list') do (set exclusionList=%%i)
-echo.Super subpartition list:!superList!
+echo.Possible super subpartition list:!superList!
 echo.Exclusion list:!exclusionList!
 for %%i in (!exclusionList!) do (
 	set pname=%%i
 	if exist tmp\images\!pname!.img (
-		echo.Super subpartition !exclusion! in exclusion list,skipping
+		echo.Super subpartition !pname! in exclusion list,skipping
 		move tmp\images\!pname!.img tmp\output\ 1>nul 2>nul
 	)
 )
@@ -63,11 +65,11 @@ set pname=
 for %%i in (!superList!) do (
 	set pname=%%i
 	if exist tmp\images\!pname!.img (
-		echo.Super subpartition  !pname! detected
+		echo.Super subpartition !pname! detected
 		echo.Erofs unpacking !pname!.img...
 		erofsUnpack tmp/images/!pname!.img 1>nul 2>nul
 		busybox sed -i "s/\[/\\\[/g" config/!pname!_file_contexts
-		busybox sed -i "/+found/d" config/!pname!_file_contexts
+		if exist tmp\system\system\etc\selinux\plat_file_contexts busybox cat tmp/system/system/etc/selinux/plat_file_contexts>>config/!pname!_file_contexts
 		move config\*!pname!* tmp\config\ 1>nul 2>nul
 		move !pname! tmp\ 1>nul 2>nul
 		del tmp\images\!pname!.img
@@ -103,8 +105,8 @@ for %%i in (!superList!) do (
 	echo.Checking !pname! size: !persize!
 	for /f "tokens=*" %%i in ('echo.!totalSize! + !persize! ^|busybox bc') do (set totalSize=%%i)
 )
-for /f "tokens=*" %%i in ('echo.!totalSize! + 387681664 ^|busybox bc') do (set totalSize=%%i)
-
+for /f "tokens=*" %%i in ('echo.!totalSize! + 369098752 ^|busybox bc') do (set totalSize=%%i)
+echo.Total size of super partition:!totalSize!
 if !totalSize! GTR 9126805504 (
 	echo.Warninng:Size of images is larger than super size
 	echo.Delete some system apps...
@@ -142,8 +144,8 @@ set pname=
 for %%i in (!superList!) do (
 	set pname=%%i
 	if exist tmp\!pname! (
-		set extraSize=104857600
-		if "!pname!" == "system_ext" set extraSize=73108864
+		set extraSize=100663296
+		if "!pname!" == "system_ext" set extraSize=67108864
 		for /f "tokens=*" %%i in ('busybox du -sb tmp/!pname! ^|busybox tr -cd 0-9') do (set dusize=%%i)
 		for /f "tokens=*" %%i in ('echo.!extraSize! + !dusize! ^|busybox bc') do (set size=%%i)
 		echo.Repacking !pname!.img with ext4 format,size: !size!
@@ -193,7 +195,9 @@ copy bin\libwinpthread-1.dll !dirname!\bin\ 1>nul 2>nul
 rd /s /q tmp 1>nul 2>nul
 rd /s /q config 1>nul 2>nul
 echo.Enjoy your rom with fastboot flash in the folder:!dirname!
-echo.All done
+for /f "tokens=*" %%i in ('busybox date ^+%%s') do (set endTime=%%i)
+for /f "tokens=*" %%i in ('echo.!endTime!-!startTime! ^|busybox bc') do (set spendTime=%%i)
+echo.All done,took !spendTime! s
 pause
 goto EOF
 
