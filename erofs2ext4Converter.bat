@@ -48,8 +48,8 @@ echo.Images was extracted to tmp/images
 del tmp\payload.bin
 md tmp\config
 md tmp\output
-for /f "tokens=* delims==" %%i in ('type bin\configure.txt ^|findstr subpartition') do (set superList=%%i)
-for /f "tokens=* delims==" %%i in ('type bin\configure.txt ^|findstr exclusion_list') do (set exclusionList=%%i)
+for /f "tokens=2 delims==" %%i in ('type bin\configure.txt ^|findstr subpartition') do (set superList=%%i)
+for /f "tokens=2 delims==" %%i in ('type bin\configure.txt ^|findstr exclusion_list') do (set exclusionList=%%i)
 
 for %%i in (!exclusionList!) do (
 	set pname=%%i
@@ -104,8 +104,8 @@ for %%i in (!superList!) do (
 )
 for /f "tokens=*" %%i in ('echo.!totalSize! + 387681664 ^|busybox bc') do (set totalSize=%%i)
 
-if !totalSize! geq 9126805504 (
-	echo.Warninng:Size of images:!totalSize! is larger than super size:9126805504
+if !totalSize! GTR 9126805504 (
+	echo.Warninng:Size of images is larger than super size
 	echo.Delete some system apps...
 	busybox rm -rf tmp/product/app/mab
 	busybox rm -rf tmp/product/priv-app/mab
@@ -189,9 +189,8 @@ copy bin\fastboot.exe !dirname!\bin\ 1>nul 2>nul
 copy bin\AdbWinApi.dll !dirname!\bin\ 1>nul 2>nul
 copy bin\AdbWinUsbApi.dll !dirname!\bin\ 1>nul 2>nul
 copy bin\libwinpthread-1.dll !dirname!\bin\ 1>nul 2>nul
-for %%i in (!superList!) do rd /s /q tmp\%%i 1>nul 2>nul
+rd /s /q tmp 1>nul 2>nul
 rd /s /q config 1>nul 2>nul
-rd /s /q tmp\config 1>nul 2>nul
 echo.Enjoy your rom with fastboot flash in the folder:!dirname!
 echo.All done
 pause
