@@ -1,0 +1,3 @@
+subpartition=odm mi_ext odm_dlkm system system_dlkm vendor vendor_dlkm product system_ext
+
+exclusion_list=odm mi_ext odm_dlkm system_dlkm vendor_dlkm

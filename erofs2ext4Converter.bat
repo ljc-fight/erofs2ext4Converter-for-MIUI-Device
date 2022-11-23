@@ -1,359 +1,208 @@
-::[Bat To Exe Converter]
-::
-::YAwzoRdxOk+EWAnk
-::fBw5plQjdG8=
-::YAwzuBVtJxjWCl3EqQJgSA==
-::ZR4luwNxJguZRRnk
-::Yhs/ulQjdF+5
-::cxAkpRVqdFKZSDk=
-::cBs/ulQjdF+5
-::ZR41oxFsdFKZSDk=
-::eBoioBt6dFKZSDk=
-::cRo6pxp7LAbNWATEpCI=
-::egkzugNsPRvcWATEpCI=
-::dAsiuh18IRvcCxnZtBJQ
-::cRYluBh/LU+EWAnk
-::YxY4rhs+aU+JeA==
-::cxY6rQJ7JhzQF1fEqQJQ
-::ZQ05rAF9IBncCkqN+0xwdVs0
-::ZQ05rAF9IAHYFVzEqQJQ
-::eg0/rx1wNQPfEVWB+kM9LVsJDGQ=
-::fBEirQZwNQPfEVWB+kM9LVsJDGQ=
-::cRolqwZ3JBvQF1fEqQJQ
-::dhA7uBVwLU+EWDk=
-::YQ03rBFzNR3SWATElA==
-::dhAmsQZ3MwfNWATElA==
-::ZQ0/vhVqMQ3MEVWAtB9wSA==
-::Zg8zqx1/OA3MEVWAtB9wSA==
-::dhA7pRFwIByZRRnk
-::Zh4grVQjdCuDJH2B50kkJwtoSRaNOnjoA60IvMv04fyCsFkYRt46aoDdyeaLOPRHyUrqY5M/wn9I1s4UCXs=
-::YB416Ek+ZG8=
-::
-::
-::978f952a14a936cc963da21a135fa983
 @echo off
-setlocal 
-title erofs2ext4Converter batch [https://github.com/ljc-fight/erofs2ext4Converter-for-MIUI-Device]
-
-
-if not exist bin\Windows (
-	echo.This is not the special directory !
-	set exitcode=1
-	goto End
+if not exist bin (
+	echo.Error: Invalid path,keep the batch file and rom file on the same path
+	pause
+	exit
 )
-fsutil 1>nul 2>nul
-if "%errorlevel%" neq "0" (
-	echo.Command "fsutil" is not supported on your device !
-	set exitcode=1
-	goto End
-)
-if "%1" == "--help"  set Error="Get help"                                   &goto Usage
-if "%1" == "-h"      set Error="Get help"                                   &goto Usage
-if "%1" == "" set Error="Not defined the first argument" & set exitcode=1   &goto Usage
-if not exist "%1" bin\Windows\cecho {04}File is not exist !{0F}{\n}         &goto End
-set zipFile=%1
-
-
-
-
-:CheckIFMIUIROM
-echo.Target: %zipFile%
-for /f "delims=" %%i in ('echo.%zipFile% ^|bin\Windows\busybox grep "miui_"') do (set checkMIUI=%%i)
-if "%checkMIUI%" == "" set UnsopportedReason="This may not be a MIUI ROM" &goto Unsopported
-for /f "delims=" %%i in ('bin\Windows\busybox basename %checkMIUI%') do (set baseName=%%i)
-for /f "delims=" %%i in ('echo.%baseName% ^|bin\Windows\busybox cut -d "_" -f 2') do (set deviceCode=%%i)
-for /f "delims=" %%i in ('echo.%baseName% ^|bin\Windows\busybox cut -d "_" -f 3') do (set romVersion=%%i)
-for /f "delims=" %%i in ('echo.%baseName% ^|bin\Windows\busybox cut -d "_" -f 5 ^|bin\Windows\busybox cut -d "." -f 1') do (set androidVersion=%%i)
-bin\Windows\cecho {0E}ROM information{0F}{\n}
-if "%deviceCode%" == "" (
-	set deviceCode=unknown
+PATH=%PATH%;%CD%\bin
+setlocal enableDelayedExpansion
+set who=%0
+if [%1] == [] (
+	call :USAGE
+	goto EOF
 ) else (
-	bin\Windows\cecho {0A}DeviceCode: %deviceCode%{0F}{\n}
-)
-if "%romVersion%" == "" (
-	set romVersion=unknown
-) else (
-	bin\Windows\cecho {0A}ROMVersion: %romVersion%{0F}{\n}
-)
-if "%androidVersion%" == "" (
-	set androidVersion=unknown
-) else (
-	bin\Windows\cecho {0A}AndroidVersion: %androidVersion%{0F}{\n}
+	set romFile=%1
+	goto MAIN
 )
 
 
+:USAGE
+echo.
+echo.Usage:
+echo.    erofs2ext4Converter.bat ^<miui_official_recovery_rom^>
+echo.
+pause
+exit /b 1
 
 
-:Cleanup
-echo.Clean workspace...
+
+:MAIN
+if not exist !romFile! (
+	call :USAGE
+	goto EOF
+)
+echo.Target:!romFile!
 rd /s /q tmp 1>nul 2>nul
-rd /s /q odm 1>nul 2>nul
 rd /s /q config 1>nul 2>nul
-rd /s /q system 1>nul 2>nul
 rd /s /q vendor 1>nul 2>nul
+rd /s /q system 1>nul 2>nul
 rd /s /q product 1>nul 2>nul
 rd /s /q system_ext 1>nul 2>nul
-rd /s /q vendor_dlkm 1>nul 2>nul
-del odm.img 1>nul 2>nul
-del system.img 1>nul 2>nul
-del vendor.img 1>nul 2>nul
-del product.img 1>nul 2>nul
-del system_ext.img 1>nul 2>nul
-del vendor_dlkm.img 1>nul 2>nul
+for /f "tokens=*" %%i in ('busybox basename !romFile!') do (set romName=%%i)
+echo.Unpacking paylaod.bin from !romName!
+7z x -y !romFile! payload.bin -otmp 1>nul 2>nul || call :ERROR "Invalid file" "You may choose a package that contains payload.bin"
+echo.Extracting images from paylaod.bin
+echo.This will take a few minutes,be patient
+payload-dumper-go -o tmp/images tmp/payload.bin 1>nul 2>nul || call :ERROR "Failed to extract payload.bin" "Is it a miui recovery rom package?"
+echo.Images was extracted to tmp/images
+del tmp\payload.bin
+md tmp\config
+md tmp\output
+for /f "tokens=* delims==" %%i in ('type bin\configure.txt ^|findstr subpartition') do (set superList=%%i)
+for /f "tokens=* delims==" %%i in ('type bin\configure.txt ^|findstr exclusion_list') do (set exclusionList=%%i)
 
-
-
-
-:Convert
-echo.Unpack zip file...
-bin\Windows\7z x -y %zipFile% -otmp 1>nul 2>nul|| (
-	set UnsopportedReason="Cannot open the file as archive !" 
-	goto Unsopported
-)
-if not exist tmp\payload.bin (
-	set UnsopportedReason="Unsopported device !"
-	goto Unsopported
-)
-echo.Unpack payload.bin...
-echo.This will take a few minutes
-bin\Windows\payload_dumper -o tmp/images tmp/payload.bin 1>nul 2>nul
-echo.payload.bin was unpacked !
-del /s /q tmp\payload.bin
-
-
-:: Unpack vendor.img to check fstab
-bin\Windows\erofsUnpack tmp/images/vendor.img
-for /f "delims=" %%i in ('bin\Windows\busybox cat vendor/etc/fstab.* ^|bin\Windows\busybox grep system ^|bin\Windows\busybox grep ext4 ^|bin\Windows\busybox awk NR^=^=1') do (set isSupportExt4FS=%%i)
-if "isSupportExt4FS" == "" (
-	set UnsopportedReason="This device's fstab dose not support ext4 filesystem !"
-	rd /s /q tmp
-	rd /s /q vendor
-	rd /s /q config
-	goto Unsopported
-) else (
-	bin\Windows\cecho {0A}Ext4 filesystem is supported on your device !{0F}{\n}
-)
-del /s /q tmp\images\vendor.img
-if exist tmp\images\odm.img (
-	bin\Windows\erofsUnpack tmp/images/odm.img
-	del /s /q tmp\images\odm.img
-)
-if exist tmp\images\system.img (
-	bin\Windows\erofsUnpack tmp/images/system.img
-	del /s /q tmp\images\system.img
-)
-if exist tmp\images\product.img (
-	bin\Windows\erofsUnpack tmp/images/product.img
-	del /s /q tmp\images\product.img
-)
-if exist tmp\images\vendor_dlkm.img (
-	bin\Windows\erofsUnpack tmp/images/vendor_dlkm.img
-	del /s /q tmp\images\vendor_dlkm.img
-)
-if exist tmp\images\system_ext.img (
-	bin\Windows\erofsUnpack tmp/images/system_ext.img
-	del /s /q tmp\images\system_ext.img
-)
-
-
-:: The text "lost+found" in config files will cause error when repacking ext4 image
-::bin\Windows\busybox sed -i "/+found/d" config/*file_contexts
-::bin\Windows\busybox sed -i "/+found/d" config/*fs_config
-bin\Windows\busybox sed -i "s/\[/\\\[/g" config/*file_contexts
-bin\Windows\busybox sed -i "s/+/\\+/g" config/*file_contexts
-
-rd /s /q system\system\media\theme\miui_mod_icons\com.google.android.apps.nbu 1>nul 2>nul
-rd /s /q system\system\media\theme\miui_mod_icons\dynamic\com.google.android.apps.nbu 1>nul 2>nul
-
-:: if the size of image is bigger than 4G ,it may unbootable after repacking image
-rd /s /q system\system\data-app
-md system\system\data-app
-
-
-:: Repack dynamic partition by make_ext4fs
-if exist odm (
-	echo.Repack odm image
-	bin\Windows\make_ext4fs -J -T 1640966400 -S config/odm_file_contexts -l 134217728 -C config/odm_fs_config -L odm -a odm odm.img odm
-	if exist odm.img (
-		bin\Windows\cecho {0A}Repack partition odm successfully !{0F}{\n}
-	) else (
-		bin\Windows\cecho {04}Failed to repack partition odm !{0F}{\n}
-		goto FailedToRepack
+for %%i in (!exclusionList!) do (
+	set pname=%%i
+	if exist tmp\output\!pname!.img (
+		echo.Super subpartition !exclusion! in exclusion list,skipping
+		move tmp\images\!pname!.img tmp\output\ 1>nul 2>nul
 	)
 )
-if exist vendor_dlkm (
-	echo.Repack vendor_dlkm image
-	bin\Windows\make_ext4fs -J -T 1640966400 -S config/vendor_dlkm_file_contexts -l 134217728 -C config/vendor_dlkm_fs_config -L vendor_dlkm -a vendor_dlkm vendor_dlkm.img vendor_dlkm
-	if exist vendor_dlkm.img (
-		bin\Windows\cecho {0A}Repack partition vendor_dlkm successfully !{0F}{\n}
-	) else (
-		bin\Windows\cecho {04}Failed to repack partition vendor_dlkm !{0F}{\n}
-		goto FailedToRepack
+set pname=
+for %%i in (!superList!) do (
+	set pname=%%i
+	if exist tmp\images\!pname!.img (
+		echo.Super subpartition  !pname! detected
+		echo.Erofs unpacking !pname!.img...
+		erofsUnpack tmp/images/!pname!.img 1>nul 2>nul
+		busybox sed -i "s/\[/\\\[/g" config/!pname!_file_contexts
+		busybox sed -i "/+found/d" config/!pname!_file_contexts
+		move config\*!pname!* tmp\config\ 1>nul 2>nul
+		move !pname! tmp\ 1>nul 2>nul
+		del tmp\images\!pname!.img
 	)
+)
+echo.Delete some APKs to ensure successful packaging
+busybox rm -rf tmp/vendor/data-app/*
+busybox rm -rf tmp/product/data-app/*
+busybox rm -rf tmp/product/app/Updater
+busybox rm -rf tmp/product/app/MiuiUpdater
+busybox rm -rf tmp/product/priv-app/Updater
+busybox rm -rf tmp/product/priv-app/MiuiUpdater
+busybox rm -rf tmp/system/system/app/Updater
+busybox rm -rf tmp/system/system/app/MiuiUpdater
+busybox rm -rf tmp/system/system/priv-app/Updater
+busybox rm -rf tmp/system/system/priv-app/MiuiUpdater
+busybox rm -rf tmp/system/system/data-app/*
+
+set pname=
+set totalSize=0
+for %%i in (!superList!) do (
+	set pname=%%i
+	set persize=
+	if not exist tmp\!pname! if not exist tmp\output\!pname!.img (
+		set persize=0
+	)
+	if exist tmp\!pname! (
+		for /f "tokens=*" %%i in ('busybox du -sb tmp/!pname! ^|busybox tr -cd 0-9') do (set persize=%%i)
+	)
+	if exist tmp\output\!pname!.img (
+		for /f "tokens=*" %%i in ('busybox du -sb tmp/output/!pname!.img ^|busybox tr -cd 0-9') do (set persize=%%i)
+	)
+	echo.Checking !pname! size: !persize!
+	for /f "tokens=*" %%i in ('echo.!totalSize! + !persize! ^|busybox bc') do (set totalSize=%%i)
+)
+for /f "tokens=*" %%i in ('echo.!totalSize! + 387681664 ^|busybox bc') do (set totalSize=%%i)
+
+if !totalSize! geq 9126805504 (
+	echo.Warninng:Size of images:!totalSize! is larger than super size:9126805504
+	echo.Delete some system apps...
+	busybox rm -rf tmp/product/app/mab
+	busybox rm -rf tmp/product/priv-app/mab
+	busybox rm -rf tmp/system/system/app/mab
+	busybox rm -rf tmp/system/system/priv-app/mab
+	busybox rm -rf tmp/product/app/AnalyticsCore
+	busybox rm -rf tmp/product/priv-app/AnalyticsCore
+	busybox rm -rf tmp/system/system/app/AnalyticsCore
+	busybox rm -rf tmp/system/system/priv-app/AnalyticsCore
+	busybox rm -rf tmp/product/app/*Browser
+	busybox rm -rf tmp/product/priv-app/*Browser
+	busybox rm -rf tmp/system/system/app/*Browser
+	busybox rm -rf tmp/system/system/priv-app/*Browser
+	busybox rm -rf tmp/product/app/*BugReport
+	busybox rm -rf tmp/product/priv-app/*BugReport
+	busybox rm -rf tmp/system/system/app/*BugReport
+	busybox rm -rf tmp/system/system/priv-app/*BugReport
+	busybox rm -rf tmp/product/app/Service
+	busybox rm -rf tmp/product/priv-app/Service
+	busybox rm -rf tmp/system/system/app/Service
+	busybox rm -rf tmp/system/system/priv-app/Service
+	busybox rm -rf tmp/product/app/MiService
+	busybox rm -rf tmp/product/priv-app/MiService
+	busybox rm -rf tmp/system/system/app/MiService
+	busybox rm -rf tmp/system/system/priv-app/MiService
+	busybox rm -rf tmp/product/app/*Music
+	busybox rm -rf tmp/product/priv-app/*Music
+	busybox rm -rf tmp/system/system/app/*Music
+	busybox rm -rf tmp/system/system/priv-app/*Music
 )
 
-setlocal enabledelayedexpansion
-
-:: Use fsutil to ctreate empty file to fill space
-if exist system (
-	echo.Repack system image
-	fsutil file createnew system\system.txt 138435456 1>nul 2>nul
-	for /f "delims=" %%i in ('bin\Windows\busybox du -sb system ^|bin\Windows\busybox tr -cd 0-9') do (set systemSize=%%i)
-	del system\system.txt
-	echo.Size of partition system: !systemSize!
-	bin\Windows\make_ext4fs -J -T 1640966400 -S config/system_file_contexts -l !systemSize! -C config/system_fs_config -L system -a system system.img system
-	if exist system.img (
-		bin\Windows\cecho {0A}Repack partition system successfully !{0F}{\n}
-	) else (
-		bin\Windows\cecho {04}Failed to repack partition system !{0F}{\n}
-		goto FailedToRepack
-	)
-)
-if exist vendor (
-	echo.Repack vendor image
-	fsutil file createnew vendor\vendor.txt 78435456 1>nul 2>nul
-	for /f "delims=" %%i in ('bin\Windows\busybox du -sb vendor ^|bin\Windows\busybox tr -cd 0-9') do (set vendorSize=%%i)
-	del vendor\vendor.txt
-	echo.Size of partition vendor: !vendorSize!
-	bin\Windows\make_ext4fs -J -T 1640966400 -S config/vendor_file_contexts -l !vendorSize! -C config/vendor_fs_config -L vendor -a vendor vendor.img vendor
-	if exist vendor.img (
-		bin\Windows\cecho {0A}Repack partition vendor successfully !{0F}{\n}
-	) else (
-		bin\Windows\cecho {04}Failed to repack partition vendor !{0F}{\n}
-		goto FailedToRepack
-	)
-)
-if exist product (
-	echo.Repack product image
-	fsutil file createnew product\product.txt 57108864 1>nul 2>nul
-	for /f "delims=" %%i in ('bin\Windows\busybox du -sb product ^|bin\Windows\busybox tr -cd 0-9') do (set productSize=%%i)
-	del product\product.txt
-	echo.Size of partition product: !productSize!
-	bin\Windows\make_ext4fs -J -T 1640966400 -S config/product_file_contexts -l !productSize! -C config/product_fs_config -L product -a product product.img product
-	if exist product.img (
-		bin\Windows\cecho {0A}Repack partition product successfully !{0F}{\n}
-	) else (
-		bin\Windows\cecho {04}Failed to repack partition product !{0F}{\n}
-		goto FailedToRepack
-	)
-)
-if exist system_ext (
-	echo.Repack system_ext image
-	fsutil file createnew system_ext\system_ext.txt 57108864 1>nul 2>nul
-	for /f "delims=" %%i in ('bin\Windows\busybox du -sb system_ext ^|bin\Windows\busybox tr -cd 0-9') do (set systemExtSize=%%i)
-	del system_ext\system_ext.txt
-	echo.Size of partition system_ext: !systemExtSize!
-	bin\Windows\make_ext4fs -J -T 1640966400 -S config/system_ext_file_contexts -l !systemExtSize! -C config/system_ext_fs_config -L system_ext -a system_ext system_ext.img system_ext
-	if exist system_ext.img (
-		bin\Windows\cecho {0A}Repack partition system_ext successfully !{0F}{\n}
-	) else (
-		bin\Windows\cecho {04}Failed to repack partition system_ext !{0F}{\n}
-		goto FailedToRepack
+set pname=
+for %%i in (!superList!) do (
+	set pname=%%i
+	if exist tmp\!pname! (
+		set extraSize=104857600
+		if "!pname!" == "system_ext" set extraSize=73108864
+		for /f "tokens=*" %%i in ('busybox du -sb tmp/!pname! ^|busybox tr -cd 0-9') do (set dusize=%%i)
+		for /f "tokens=*" %%i in ('echo.!extraSize! + !dusize! ^|busybox bc') do (set size=%%i)
+		echo.Repacking !pname!.img with ext4 format,size: !size!
+		make_ext4fs -J -T 0 -S tmp/config/!pname!_file_contexts -l !size! -C tmp/config/!pname!_fs_config -a !pname! -L !pname! tmp/output/!pname!.img tmp/!pname! 1>nul 2>nul
+		if not exist tmp\output\!pname!.img (
+			make_ext4fs -J -T 0 -S tmp/config/!pname!_file_contexts -l !size! -C tmp/config/!pname!_fs_config -a !pname! -L !pname! tmp/output/!pname!.img tmp/!pname!
+			call :ERROR "Failed to repack !pname!.img with ext4 format" "Details are above"
+		)
 	)
 )
 
-
-
-
-:MakeSuperImage
-
-:: odm system vendor product system_ext vendor_dlkm
-if exist odm.img if exist system.img if exist vendor.img if exist product.img if exist system_ext.img if exist vendor_dlkm.img (
-	bin\Windows\lpmake -F --virtual-ab --output super.img --metadata-size 65536 --super-name super --metadata-slots 3 --device super:9126805504 --group=qti_dynamic_partitions_a:9126805504 --group=qti_dynamic_partitions_b:9126805504 --partition odm_a:readonly:134217728:qti_dynamic_partitions_a --image odm_a=odm.img --partition system_a:readonly:!systemSize!:qti_dynamic_partitions_a --image system_a=system.img --partition vendor_a:readonly:!vendorSize!:qti_dynamic_partitions_a --image vendor_a=vendor.img --partition product_a:readonly:!productSize!:qti_dynamic_partitions_a --image product_a=product.img --partition system_ext_a:readonly:!systemExtSize!:qti_dynamic_partitions_a --image system_ext_a=system_ext.img --partition vendor_dlkm_a:readonly:134217728:qti_dynamic_partitions_a --image vendor_dlkm_a=vendor_dlkm.img --partition odm_b:readonly:0:qti_dynamic_partitions_b --partition system_b:readonly:0:qti_dynamic_partitions_b --partition vendor_b:readonly:0:qti_dynamic_partitions_b --partition product_b:readonly:0:qti_dynamic_partitions_b --partition system_ext_b:readonly:0:qti_dynamic_partitions_b --partition vendor_dlkm_b:readonly:0:qti_dynamic_partitions_b
-
+set size=
+set pname=
+set lpargs= -F --virtual-ab --output tmp/output/super.img --metadata-size 65536 --super-name super --metadata-slots 3 --device super:9126805504 --group=qti_dynamic_partitions_a:9126805504 --group=qti_dynamic_partitions_b:9126805504
+for %%i in (!superList!) do (
+	set pname=%%i
+	if exist tmp\output\!pname!.img (
+		for /f "tokens=*" %%i in ('busybox du -sb tmp/output/!pname!.img ^|busybox tr -cd 0-9') do (set size=%%i)
+		set args=--partition !pname!_a:readonly:!size!:qti_dynamic_partitions_a --image !pname!_a=tmp/output/!pname!.img --partition !pname!_b:readonly:0:qti_dynamic_partitions_b
+		set lpargs=!lpargs! !args!
+	)
 )
+lpmake !lpargs! || call :ERROR "Failed to pack super.img" "Maybe out of space?Edit the erofs2ext4Converter.bat and remove something else from system or other partition"
 
-:: odm system vendor product vendor_dlkm
-if exist odm.img if exist system.img if exist vendor.img if exist product.img if not exist system_ext.img if exist vendor_dlkm.img (
-	bin\Windows\lpmake -F --virtual-ab --output super.img --metadata-size 65536 --super-name super --metadata-slots 3 --device super:9126805504 --group=qti_dynamic_partitions_a:9126805504 --group=qti_dynamic_partitions_b:9126805504 --partition odm_a:readonly:134217728:qti_dynamic_partitions_a --image odm_a=odm.img --partition system_a:readonly:!systemSize!:qti_dynamic_partitions_a --image system_a=system.img --partition vendor_a:readonly:!vendorSize!:qti_dynamic_partitions_a --image vendor_a=vendor.img --partition product_a:readonly:!productSize!:qti_dynamic_partitions_a --image product_a=product.img --partition vendor_dlkm_a:readonly:134217728:qti_dynamic_partitions_a --image vendor_dlkm_a=vendor_dlkm.img --partition odm_b:readonly:0:qti_dynamic_partitions_b --partition system_b:readonly:0:qti_dynamic_partitions_b --partition vendor_b:readonly:0:qti_dynamic_partitions_b --partition product_b:readonly:0:qti_dynamic_partitions_b --partition vendor_dlkm_b:readonly:0:qti_dynamic_partitions_b
+set dirname=erofs2ext4_%date:~5,2%%date:~8,2%_!RANDOM!
+md !dirname!
+move tmp\images !dirname! 1>nul 2>nul
+move tmp\output\super.img !dirname!\images\ 1>nul 2>nul
+copy bin\install_update.bat !dirname! 1>nul 2>nul
+copy bin\install_format.bat !dirname! 1>nul 2>nul
 
+for /f "tokens=1 delims=." %%i in ('dir /b !dirname!\images ^|findstr -v "preload super"') do (
+	set fwimg=%%i
+	busybox sed -i "/rem/i fastboot flash !fwimg!_b images\/!fwimg!.img" !dirname!/install_format.bat
+	busybox sed -i "/rem/i fastboot flash !fwimg!_a images\/!fwimg!.img" !dirname!/install_format.bat
+	busybox sed -i "/rem/i fastboot flash !fwimg!_b images\/!fwimg!.img" !dirname!/install_update.bat
+	busybox sed -i "/rem/i fastboot flash !fwimg!_a images\/!fwimg!.img" !dirname!/install_update.bat
 )
-
-:: odm system vendor product system_ext
-if exist odm.img if exist system.img if exist vendor.img if exist product.img if exist system_ext.img if not exist vendor_dlkm.img (
-	bin\Windows\lpmake -F --virtual-ab --output super.img --metadata-size 65536 --super-name super --metadata-slots 3 --device super:9126805504 --group=qti_dynamic_partitions_a:9126805504 --group=qti_dynamic_partitions_b:9126805504 --partition odm_a:readonly:134217728:qti_dynamic_partitions_a --image odm_a=odm.img --partition system_a:readonly:!systemSize!:qti_dynamic_partitions_a --image system_a=system.img --partition vendor_a:readonly:!vendorSize!:qti_dynamic_partitions_a --image vendor_a=vendor.img --partition product_a:readonly:!productSize!:qti_dynamic_partitions_a --image product_a=product.img --partition system_ext_a:readonly:!systemExtSize!:qti_dynamic_partitions_a --image system_ext_a=system_ext.img --partition odm_b:readonly:0:qti_dynamic_partitions_b --partition system_b:readonly:0:qti_dynamic_partitions_b --partition vendor_b:readonly:0:qti_dynamic_partitions_b --partition product_b:readonly:0:qti_dynamic_partitions_b --partition system_ext_b:readonly:0:qti_dynamic_partitions_b
-
-)
-
-:: odm system vendor product
-if exist odm.img if exist system.img if exist vendor.img if exist product.img if not exist system_ext.img if not exist vendor_dlkm.img (
-	bin\Windows\lpmake -F --virtual-ab --output super.img --metadata-size 65536 --super-name super --metadata-slots 3 --device super:9126805504 --group=qti_dynamic_partitions_a:9126805504 --group=qti_dynamic_partitions_b:9126805504 --partition odm_a:readonly:134217728:qti_dynamic_partitions_a --image odm_a=odm.img --partition system_a:readonly:!systemSize!:qti_dynamic_partitions_a --image system_a=system.img --partition vendor_a:readonly:!vendorSize!:qti_dynamic_partitions_a --image vendor_a=vendor.img --partition product_a:readonly:!productSize!:qti_dynamic_partitions_a --image product_a=product.img --partition odm_b:readonly:0:qti_dynamic_partitions_b --partition system_b:readonly:0:qti_dynamic_partitions_b --partition vendor_b:readonly:0:qti_dynamic_partitions_b --partition product_b:readonly:0:qti_dynamic_partitions_b
-
-)
-
-:: system vendor product system_ext
-if not exist odm.img if exist system.img if exist vendor.img if exist product.img if exist system_ext.img if not exist vendor_dlkm.img (
-	bin\Windows\lpmake -F --virtual-ab --output super.img --metadata-size 65536 --super-name super --metadata-slots 3 --device super:9126805504 --group=qti_dynamic_partitions_a:9126805504 --group=qti_dynamic_partitions_b:9126805504 --partition system_a:readonly:!systemSize!:qti_dynamic_partitions_a --image system_a=system.img --partition vendor_a:readonly:!vendorSize!:qti_dynamic_partitions_a --image vendor_a=vendor.img --partition product_a:readonly:!productSize!:qti_dynamic_partitions_a --image product_a=product.img --partition system_ext_a:readonly:!systemExtSize!:qti_dynamic_partitions_a --image system_ext_a=system_ext.img --partition system_b:readonly:0:qti_dynamic_partitions_b --partition vendor_b:readonly:0:qti_dynamic_partitions_b --partition product_b:readonly:0:qti_dynamic_partitions_b --partition system_ext_b:readonly:0:qti_dynamic_partitions_b
-
-)
-
-:: system vendor product
-if not exist odm.img if exist system.img if exist vendor.img if exist product.img if not exist system_ext.img if not exist vendor_dlkm.img (
-	bin\Windows\lpmake -F --virtual-ab --output super.img --metadata-size 65536 --super-name super --metadata-slots 3 --device super:9126805504 --group=qti_dynamic_partitions_a:9126805504 --group=qti_dynamic_partitions_b:9126805504 --partition system_a:readonly:!systemSize!:qti_dynamic_partitions_a --image system_a=system.img --partition vendor_a:readonly:!vendorSize!:qti_dynamic_partitions_a --image vendor_a=vendor.img --partition product_a:readonly:!productSize!:qti_dynamic_partitions_a --image product_a=product.img --partition system_b:readonly:0:qti_dynamic_partitions_b --partition vendor_b:readonly:0:qti_dynamic_partitions_b --partition product_b:readonly:0:qti_dynamic_partitions_b
-)
-
-
-if exist super.img (
-	bin\Windows\cecho {0A}Pack super.img successfully !{0F}{\n}
-) else (
-	bin\Windows\cecho {04}Failed to pack super.img !{0F}{\n}
-	goto FailedToRepack
-)
-
-setlocal disabledelayedexpansion
-
-if exist ext4_%deviceCode%_%romVersion%_%androidVersion% rd /s /q ext4_%deviceCode%_%romVersion%_%androidVersion%
-
-md ext4_%deviceCode%_%romVersion%_%androidVersion%
-
-move tmp\images ext4_%deviceCode%_%romVersion%_%androidVersion%\
-move super.img ext4_%deviceCode%_%romVersion%_%androidVersion%\images\super.img
-bin\Windows\busybox cp -rf bin/platform-tools ext4_%deviceCode%_%romVersion%_%androidVersion%/
-bin\Windows\busybox cp -rf bin/flash*.bat ext4_%deviceCode%_%romVersion%_%androidVersion%/
-del *.img
-rd /s /q odm 1>nul 2>nul
+busybox unix2dos !dirname!/install_format.bat
+busybox unix2dos !dirname!/install_update.bat
+md !dirname!\bin
+copy bin\adb.exe !dirname!\bin\ 1>nul 2>nul
+copy bin\fastboot.exe !dirname!\bin\ 1>nul 2>nul
+copy bin\AdbWinApi.dll !dirname!\bin\ 1>nul 2>nul
+copy bin\AdbWinUsbApi.dll !dirname!\bin\ 1>nul 2>nul
+copy bin\libwinpthread-1.dll !dirname!\bin\ 1>nul 2>nul
+for %%i in (!superList!) do rd /s /q tmp\%%i 1>nul 2>nul
 rd /s /q config 1>nul 2>nul
-rd /s /q system 1>nul 2>nul
-rd /s /q vendor 1>nul 2>nul
-rd /s /q product 1>nul 2>nul
-rd /s /q system_ext 1>nul 2>nul
-rd /s /q vendor_dlkm 1>nul 2>nul
-rd /s/ q tmp 1>nul 2>nul
+rd /s /q tmp\config 1>nul 2>nul
+echo.Enjoy your rom with fastboot flash in the folder:!dirname!
+echo.All done
+pause
+goto EOF
 
-bin\Windows\cecho {0A}Everything is OK !{0F}{\n}
-bin\Windows\cecho {0A}Production was output to the directory ext4_%deviceCode%_%romVersion%_%androidVersion% !{0F}{\n}
-
-goto End
-
-
-
-
-:Usage
+:ERROR
 echo.
-echo.Error reason: %ERROR%
+echo.Error: - %1
+echo._Tips: - %2
 echo.
-bin\Windows\cecho {0E}Usage: erofs2ext4Converter.bat ^<filePath^>{0F}{\n}
-goto End
+pause
+exit
 
-
-
-
-:Unsopported
-echo.
-echo.Error info :
-bin\Windows\cecho {04}    %UnsopportedReason% {0F}{\n}
-echo.
-goto end
-
-
-
-
-:FailedToRepack
-setlocal disabledelayedexpansion
-bin\Windows\cecho {04}Failed !{0F}{\n}
-
-
-
-
-:End
-if "%exitcode%"=="1" pause
+:EOF
