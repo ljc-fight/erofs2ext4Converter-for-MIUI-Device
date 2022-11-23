@@ -1,59 +1,15 @@
-# erofs2ext4Converter-for-MIUI-Device
-By analyzing the Xiaomi erofs filesystem device's fstab files found that two types of erofs and ext4 are supported, this tool is intended to help developers convert the erofs file system into an ext4 file system with one click
-
-## Usage: 
-```
-erofs2ext4Converter.bat filePath
-```
-
-## Supported Devices(Theoretically):
-- Xiaomi MIX4
-- Xiaomi Civi
-- Xiaomi Civi 1S
-- Redmi K50
-- Redmi K50G
-- Redmi K50 Pro
-- Xiaomi 12
-- Xiaomi 12 Pro (QCOM,MTK)
-- Xiaomi 12S Pro
-- Xiaomi 12S Ultra
-- Any new MIUI erofs devices
-
-## Attention
-- You should delete some apps or files to keep the system partition smaller than 4G
-- Only EROFS filesystem MIUI devices can use this
-	
-
-## Additionally - Reference:
-These tools are from Internet
-
-- 7-zip
-https://www.7-zip.org/
+## erofs2ext4Converter README.MD
+- 注意事项
+  - 将erofs2ext4Converter.bat和ROM文件放在相同路径
+  - 将ROM拖到erofs2ext4Converter.bat开始转换
+  - 如果需要更改super子分区列表和排除列表，请编辑bin/configure.txt
+  - 请保证工具所在盘符有20G空闲空间
 
 
-- busybox
-https://www.busybox.net/
 
-	
-- cecho
-https://github.com/lordmulder/cecho
-
-
-- erofsUnpack
-https://github.com/thka2016/erofsUnpack
-
-
-- lptool
-https://github.com/LonelyFool/lpunpack_and_lpmake
-
-
-- payload-dumper-go
-https://github.com/ssut/payload-dumper-go
-
-
-- make_ext4fs
-make_ext4fs binary compiled by: [@superR.][@anpaza][@jamflux]
-
-
-- mkfs.erofs
-https://www.mankier.com/1/mkfs.erofs
+- Notes for English
+  - keep the erofs2ext4Converter.bat and your rom file on the same path
+  - Drag the ROM to erofs2ext4Converter.bat to start conversion
+  - Edit your super subpartitions and exclusion list in bin/configure.txt if you want
+  - Make sure that the drive where the tool is located has 20 GB of free space
+  
