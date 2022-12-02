@@ -69,7 +69,7 @@ for %%i in (!superList!) do (
 		echo.Erofs unpacking !pname!.img...
 		erofsUnpack tmp/images/!pname!.img 1>nul 2>nul
 		busybox sed -i "s/\[/\\\[/g" config/!pname!_file_contexts
-		if exist tmp\system\system\etc\selinux\plat_file_contexts busybox cat tmp/system/system/etc/selinux/plat_file_contexts>>config/!pname!_file_contexts
+		::if exist tmp\system\system\etc\selinux\plat_file_contexts busybox cat tmp/system/system/etc/selinux/plat_file_contexts>>config/!pname!_file_contexts
 		move config\*!pname!* tmp\config\ 1>nul 2>nul
 		move !pname! tmp\ 1>nul 2>nul
 		del tmp\images\!pname!.img
@@ -107,15 +107,20 @@ for %%i in (!superList!) do (
 )
 for /f "tokens=*" %%i in ('echo.!totalSize! + 369098752 ^|busybox bc') do (set totalSize=%%i)
 echo.Total size of super partition:!totalSize!
-if !totalSize! GTR 9126805504 (
+busybox bash -c "[ !totalSize! -gt 9126805504 ] && return 1 ||return 0"
+if "!errorlevel!" NEQ "0" (
 	echo.Warninng:Size of images is larger than super size
 	echo.Delete some system apps...
 	busybox rm -rf tmp/product/app/mab
 	busybox rm -rf tmp/product/priv-app/mab
 	busybox rm -rf tmp/system/system/app/mab
+	busybox rm -rf tmp/system/system/app/MIpay
 	busybox rm -rf tmp/system/system/priv-app/mab
+	busybox rm -rf tmp/system/system/priv-app/MIpay
 	busybox rm -rf tmp/product/app/AnalyticsCore
+	busybox rm -rf tmp/product/app/MIpay
 	busybox rm -rf tmp/product/priv-app/AnalyticsCore
+	busybox rm -rf tmp/product/priv-app/MIpay
 	busybox rm -rf tmp/system/system/app/AnalyticsCore
 	busybox rm -rf tmp/system/system/priv-app/AnalyticsCore
 	busybox rm -rf tmp/product/app/*Browser
@@ -144,12 +149,14 @@ set pname=
 for %%i in (!superList!) do (
 	set pname=%%i
 	if exist tmp\!pname! (
-		set extraSize=100663296
+		set extraSize=134217728
+		rem 100663296
 		if "!pname!" == "system_ext" set extraSize=67108864
 		for /f "tokens=*" %%i in ('busybox du -sb tmp/!pname! ^|busybox tr -cd 0-9') do (set dusize=%%i)
 		for /f "tokens=*" %%i in ('echo.!extraSize! + !dusize! ^|busybox bc') do (set size=%%i)
 		echo.Repacking !pname!.img with ext4 format,size: !size!
-		make_ext4fs -J -T 0 -S tmp/config/!pname!_file_contexts -l !size! -C tmp/config/!pname!_fs_config -a !pname! -L !pname! tmp/output/!pname!.img tmp/!pname! 1>nul 2>nul
+		make_ext4fs -J -T 0 -l !size! -C tmp/config/!pname!_fs_config -a !pname! -L !pname! tmp/output/!pname!.img tmp/!pname! 1>nul 2>nul
+		::make_ext4fs -J -T 0 -S tmp/config/!pname!_file_contexts -l !size! -C tmp/config/!pname!_fs_config -a !pname! -L !pname! tmp/output/!pname!.img tmp/!pname! 1>nul 2>nul
 		if not exist tmp\output\!pname!.img (
 			make_ext4fs -J -T 0 -S tmp/config/!pname!_file_contexts -l !size! -C tmp/config/!pname!_fs_config -a !pname! -L !pname! tmp/output/!pname!.img tmp/!pname!
 			call :ERROR "Failed to repack !pname!.img with ext4 format" "Details are above"
